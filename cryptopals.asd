@@ -8,7 +8,8 @@
                :cl-base64)
   :components ((:module "src"
                 :components
-                ((:file "main"))))
+                ((:file "main")
+                 (:file "set1"))))
   :description "Cryptopals Cryptography Challenge"
   :in-order-to ((test-op (test-op "cryptopals/tests"))))
 

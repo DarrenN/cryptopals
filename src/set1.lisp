@@ -25,5 +25,6 @@ Assumes HEX-STRING contains an even number of hex digits."
     result))
 
 (defun hex-to-base64 (hex-string)
+  "Convert a hex-string into bytes and encode them with base64"
   (base64:usb8-array-to-base64-string
    (coerce (hex-string-to-bytes hex-string) '(vector (unsigned-byte 8)))))

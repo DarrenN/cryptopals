@@ -2,7 +2,10 @@
   :version "0.0.1"
   :author "DarrenN"
   :license "BSD"
-  :depends-on ()
+  :depends-on (:ironclad
+               :babel
+               :uiop
+               :cl-base64)
   :components ((:module "src"
                 :components
                 ((:file "main"))))

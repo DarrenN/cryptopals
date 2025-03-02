@@ -7,10 +7,12 @@
                :uiop
                :cl-base64
                :iterate
-               :str)
+               :str
+               :serapeum)
   :components ((:module "src"
                 :components
                 ((:file "main")
+                 (:file "constants")
                  (:file "set1"))))
   :description "Cryptopals Cryptography Challenge"
   :in-order-to ((test-op (test-op "cryptopals/tests"))))

@@ -5,7 +5,9 @@
   :depends-on (:ironclad
                :babel
                :uiop
-               :cl-base64)
+               :cl-base64
+               :iterate
+               :str)
   :components ((:module "src"
                 :components
                 ((:file "main")

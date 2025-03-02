@@ -1,8 +1,21 @@
-* Cryptopals  - Cryptopals Cryptography Challenge
+* Cryptopals
+
+Common Lisp solutions to the [[https://www.cryptopals.com/][Cryptopals Cryptography Challenge]].
 
 ** Usage
 
+Using Quickisp, spin up a REPL of your choice and run the tests:
+
+#+begin_src lisp
+  (ql:quickload :cryptopals)
+  (asdf:test-system :cryptopals)
+#+end_src
+
 ** Installation
+
+#+begin_src lisp
+  (ql:quickload :cryptopals)
+#+end_src
 
 ** Author
 

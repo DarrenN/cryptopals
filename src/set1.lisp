@@ -1,8 +1,11 @@
 (defpackage cryptopals/set1
   (:use :cl)
   (:import-from :cl-base64)
+  (:import-from :str :concat :downcase)
+  (:local-nicknames (:i :iterate))
   (:export :hex-string-to-bytes
-           :hex-to-base64))
+   :hex-to-base64
+           :fixed-xor))
 
 (in-package :cryptopals/set1)
 
@@ -27,3 +30,16 @@ Assumes HEX-STRING contains an even number of hex digits."
 (defun hex-to-base64 (hex-string)
   "Convert a hex-string into bytes and encode them with base64"
   (base64:usb8-array-to-base64-string (hex-string-to-bytes hex-string)))
+
+;;; Challenge 2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun fixed-xor (hex-string-a hex-string-b)
+  "Decode hex-string-a and hex-string-b into bytes and XOR them"
+  (let* ((bytes-a (hex-string-to-bytes hex-string-a))
+         (bytes-b (hex-string-to-bytes hex-string-b))
+         (xord (i:iter (i:for i below (length bytes-a))
+                 (i:collect
+                     (format nil "~X"
+                             (logxor (aref bytes-a i) (aref bytes-b i)))))))
+    (downcase (apply #'concat xord))))

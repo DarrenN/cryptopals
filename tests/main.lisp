@@ -43,3 +43,10 @@
           "686974207468652062756c6c277320657965")
          "746865206b696420646f6e277420706c6179"))))
 
+;; Challenge 3
+
+(deftest set1/challenge3
+  (testing "single byte xor cipher"
+    (ok (equal
+         (cryptopals/set1:single-byte-xor-cipher "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
+         '(23 88 "cooking mc's like a pound of bacon")))))

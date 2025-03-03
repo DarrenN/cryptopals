@@ -14,12 +14,12 @@
                 #:href-default)
   (:import-from :cryptopals/constants
                 #:+english-occurance+
-                #:+english-letters+)
+                #:+english-letters+
+                #:+etaoin-shrdlu+)
   (:local-nicknames (:i :iterate))
   (:export #:hex-string-to-bytes
            #:hex-to-base64
-           #:fixed-xor
-           #:+english-occurance+))
+           #:fixed-xor))
 
 (in-package :cryptopals/set1)
 
@@ -89,6 +89,11 @@ decrypted text against letter frequencies in english"
          (i:sum (abs (- (car z) (cadr z)))))
        len-dist)))
 
+(defun score (decs)
+  "Count ETAOIN SHRDLU + Spaces to score a decrypted list of chars"
+  (i:iter (i:for d in decs)
+    (i:sum (if (href +etaoin-shrdlu+ d) 1 0))))
+
 (defun decrypt-single-byte-xor (bs x)
   "loop over the bytes and xor them against x. We return a list of
 (fitting-quotient x string) which we can use to try and find the
@@ -96,9 +101,11 @@ best solution."
   (let* ((decs (i:iter (i:for b in-vector bs)
                  (i:collect
                      (downcase (format nil "~C" (code-char (logxor b x)))))))
-         (freq (get-char-frequency decs))
-         (quot (get-fitting-quotient decs freq)))
-    `(,quot ,x ,(apply #'concat decs))))
+         ;(freq (get-char-frequency decs))
+         (sc (score decs))
+         ;(quot (get-fitting-quotient decs freq))
+         )
+    `(,sc ,x ,(apply #'concat decs))))
 
 (defun single-byte-xor-cipher (hex-string)
   "Try to find the best decrypted text. Convert the hex-string to bytes and loop
@@ -108,6 +115,5 @@ entry, and take the top 5 candidates."
   (let* ((bytes (hex-string-to-bytes hex-string))
          (decs (i:iter (i:for i from 0 below 256)
                  (i:collect (decrypt-single-byte-xor bytes i)))))
-    (subseq
-     (sort (copy-seq decs) #'< :key #'car)
-     0 5)))
+    (car
+     (sort (copy-seq decs) #'> :key #'car))))

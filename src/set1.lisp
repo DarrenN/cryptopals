@@ -19,7 +19,8 @@
   (:local-nicknames (:i :iterate))
   (:export #:hex-string-to-bytes
            #:hex-to-base64
-           #:fixed-xor))
+           #:fixed-xor
+           #:single-byte-xor-cipher))
 
 (in-package :cryptopals/set1)
 
@@ -60,9 +61,6 @@ Assumes HEX-STRING contains an even number of hex digits."
 
 ;;; Challenge 3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Using fitting quotient scoring
-;; https://www.codementor.io/@arpitbhayani/deciphering-single-byte-xor-ciphertext-17mtwlzh30
 
 (defun get-char-frequency (cs)
   "Count the frequency of each char in the sequence in a hash table"

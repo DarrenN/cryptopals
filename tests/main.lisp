@@ -25,6 +25,7 @@
          "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"))))
 
 ;; Challenge 2
+;; https://www.cryptopals.com/sets/1/challenges/2
 ;;
 ;; Fixed XOR
 ;; Write a function that takes two equal-length buffers and produces their XOR combination.
@@ -44,6 +45,7 @@
          "746865206b696420646f6e277420706c6179"))))
 
 ;; Challenge 3
+;; https://www.cryptopals.com/sets/1/challenges/3
 ;;
 ;; Single-byte XOR cipher
 ;; The hex encoded string: 1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736
@@ -56,6 +58,7 @@
          '(23 88 "cooking mc's like a pound of bacon")))))
 
 ;; Challenge 4
+;; https://www.cryptopals.com/sets/1/challenges/4
 ;;
 ;; One of the 60-character strings in this file has been encrypted by single-character XOR.
 
@@ -65,3 +68,26 @@
          (cryptopals/set1:xor-cipher-file #p"../data/4.txt")
          '(22 53 "now that the party is jumping
 ")))))
+
+;; Challenge 5
+;; https://www.cryptopals.com/sets/1/challenges/5
+;;
+;; Implement repeating-key XOR
+;; Here is the opening stanza of an important work of the English language:
+;;
+;; Burning 'em, if you ain't quick and nimble
+;; I go crazy when I hear a cymbal
+;;
+;; Encrypt it, under the key "ICE", using repeating-key XOR.
+;;
+;; It should come out to:
+;;
+;; 0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272
+;; a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f
+
+(deftest set1/challenge5
+  (testing "Implement repeating key XOR"
+    (ok (equal
+         (cryptopals/set1:repeating-key-xor "Burning 'em, if you ain't quick and nimble
+I go crazy when I hear a cymbal" :key "ICE")
+         "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"))))

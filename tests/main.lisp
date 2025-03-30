@@ -44,9 +44,24 @@
          "746865206b696420646f6e277420706c6179"))))
 
 ;; Challenge 3
+;;
+;; Single-byte XOR cipher
+;; The hex encoded string: 1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736
+;; ... has been XOR'd against a single character. Find the key, decrypt the message.
 
 (deftest set1/challenge3
   (testing "single byte xor cipher"
     (ok (equal
          (cryptopals/set1:single-byte-xor-cipher "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
          '(23 88 "cooking mc's like a pound of bacon")))))
+
+;; Challenge 4
+;;
+;; One of the 60-character strings in this file has been encrypted by single-character XOR.
+
+(deftest set1/challenge4
+  (testing "Detect single-character XOR"
+    (ok (equal
+         (cryptopals/set1:xor-cipher-file #p"../data/4.txt")
+         '(22 53 "now that the party is jumping
+")))))

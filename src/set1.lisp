@@ -7,7 +7,8 @@
                 #:hash-table-values)
   (:import-from :str
                 #:concat
-                #:downcase)
+                #:downcase
+                #:lines)
   (:import-from :serapeum
                 #:dict
                 #:href
@@ -23,7 +24,8 @@
            #:hex-to-base64
            #:fixed-xor
            #:single-byte-xor-cipher
-           #:xor-cipher-file))
+           #:xor-cipher-file
+           #:repeating-key-xor))
 
 (in-package :cryptopals/set1)
 
@@ -92,6 +94,9 @@ entry, and take the top 5 candidates."
     (car
      (sort (copy-seq decs) #'> :key #'car))))
 
+;;; Challenge 4
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun xor-cipher-file (f)
   "Try to find the line that has been encrypted with a single byte XOR cipher.
 We do this by looping over the lines and pulling out the top scored candidate.
@@ -99,3 +104,37 @@ We then sort by score in descending order and return the top candidate."
   (let* ((ls (read-file-lines f))
          (cs (mapcar #'single-byte-xor-cipher ls)))
     (car (sort (copy-seq cs) #'> :key #'car))))
+
+
+;;; Challenge 5
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Create circular lists which we use to conveniently rotate the key
+;; https://stackoverflow.com/questions/16678371/circular-list-in-common-lisp
+
+(defun circular (items)
+  (setf (cdr (last items)) items))
+
+(defclass circular ()
+  ((items :initarg :items)))
+
+(defmethod initialize-instance :after ((c circular))
+  (setf (slot-value c 'items) (circular (slot-value c 'items))))
+
+(defmethod next-item ((c circular))
+  (prog1 (first (slot-value c 'items))
+    (setf (slot-value c 'items)
+          (rest (slot-value c 'items)))))
+
+(defun string-to-xord-hex (str rk)
+  (i:iter (i:for s in-string str)
+    (i:collect (format nil "~2,'0X" (logxor (char-int s) (next-item rk))))))
+
+(defun repeating-key-xor (text &key key)
+  "In repeating-key XOR, you'll sequentially apply each byte of the key (ex:
+'ICE'); the first byte of plaintext will be XOR'd against I, the next C, the
+next E, then I again for the 4th byte, and so on."
+  (let* ((kb (i:iter (i:for s in-string key)
+               (i:collect (char-int s))))
+         (rk (make-instance 'circular :items kb)))
+    (downcase (apply #'concat (string-to-xord-hex text rk)))))

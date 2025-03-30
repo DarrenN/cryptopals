@@ -16,11 +16,14 @@
                 #:+english-occurance+
                 #:+english-letters+
                 #:+etaoin-shrdlu+)
+  (:import-from :uiop
+                #:read-file-lines)
   (:local-nicknames (:i :iterate))
   (:export #:hex-string-to-bytes
            #:hex-to-base64
            #:fixed-xor
-           #:single-byte-xor-cipher))
+           #:single-byte-xor-cipher
+           #:xor-cipher-file))
 
 (in-package :cryptopals/set1)
 
@@ -62,31 +65,6 @@ Assumes HEX-STRING contains an even number of hex digits."
 ;;; Challenge 3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun get-char-frequency (cs)
-  "Count the frequency of each char in the sequence in a hash table"
-  (i:iter
-    (i:with counter = (dict))
-    (i:for c in cs)
-    (i:reducing c by (lambda (accum s)
-                       (if (href accum s)
-                           (setf (href accum s) (+ 1 (href accum s)))
-                           (setf (href accum s) 1))
-                       accum) initial-value counter)))
-
-; (single-byte-xor-cipher "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
-
-(defun get-fitting-quotient (decs freq)
-  "Check letter occurances and create a fitting quotient of letters in the
-decrypted text against letter frequencies in english"
-  (let* ((len (length decs))
-         (dist-text (i:iter (i:for (k v) in-hashtable +english-occurance+)
-                      (i:collect
-                          `(,v ,(float (/ (* (href-default 0 freq k) 100) len)) ,k))))
-         (len-dist (length dist-text)))
-    (/ (i:iter (i:for z in dist-text)
-         (i:sum (abs (- (car z) (cadr z)))))
-       len-dist)))
-
 (defun score (decs)
   "Count ETAOIN SHRDLU + Spaces to score a decrypted list of chars"
   (i:iter (i:for d in decs)
@@ -99,9 +77,7 @@ best solution."
   (let* ((decs (i:iter (i:for b in-vector bs)
                  (i:collect
                      (downcase (format nil "~C" (code-char (logxor b x)))))))
-         ;(freq (get-char-frequency decs))
          (sc (score decs))
-         ;(quot (get-fitting-quotient decs freq))
          )
     `(,sc ,x ,(apply #'concat decs))))
 
@@ -115,3 +91,11 @@ entry, and take the top 5 candidates."
                  (i:collect (decrypt-single-byte-xor bytes i)))))
     (car
      (sort (copy-seq decs) #'> :key #'car))))
+
+(defun xor-cipher-file (f)
+  "Try to find the line that has been encrypted with a single byte XOR cipher.
+We do this by looping over the lines and pulling out the top scored candidate.
+We then sort by score in descending order and return the top candidate."
+  (let* ((ls (read-file-lines f))
+         (cs (mapcar #'single-byte-xor-cipher ls)))
+    (car (sort (copy-seq cs) #'> :key #'car))))

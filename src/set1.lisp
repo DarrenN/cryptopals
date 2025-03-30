@@ -25,7 +25,8 @@
            #:fixed-xor
            #:single-byte-xor-cipher
            #:xor-cipher-file
-           #:repeating-key-xor))
+           #:repeating-key-xor
+           #:hamming-distance))
 
 (in-package :cryptopals/set1)
 
@@ -118,7 +119,8 @@ We then sort by score in descending order and return the top candidate."
 (defclass circular ()
   ((items :initarg :items)))
 
-(defmethod initialize-instance :after ((c circular))
+(defmethod initialize-instance :after ((c circular) &rest initargs)
+  (declare (ignorable initargs))
   (setf (slot-value c 'items) (circular (slot-value c 'items))))
 
 (defmethod next-item ((c circular))
@@ -138,3 +140,19 @@ next E, then I again for the 4th byte, and so on."
                (i:collect (char-int s))))
          (rk (make-instance 'circular :items kb)))
     (downcase (apply #'concat (string-to-xord-hex text rk)))))
+
+;;; Challenge 6
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun string->binary (str)
+  "Convert string into a list of bits. Since we're using ASCII we pad the bits
+for each character to 7."
+  (i:iter outer (i:for s in-string str)
+    (i:iter (i:for c in-string (format nil "~7,'0B" (char-int s)))
+      (i:in outer (i:collect (if (equal c #\1) 1 0))))))
+
+(defun hamming-distance (a b)
+  "Compute the difference between the bits of strings a and b."
+  (count 1 (mapcar #'logxor
+                   (string->binary a)
+                   (string->binary b))))

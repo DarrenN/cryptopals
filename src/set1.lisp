@@ -80,16 +80,17 @@ best solution."
   (let* ((decs (i:iter (i:for b in-vector bs)
                  (i:collect
                      (downcase (format nil "~C" (code-char (logxor b x)))))))
-         (sc (score decs))
-         )
+         (sc (score decs)))
     `(,sc ,x ,(apply #'concat decs))))
 
-(defun single-byte-xor-cipher (hex-string)
+(defun single-byte-xor-cipher (input)
   "Try to find the best decrypted text. Convert the hex-string to bytes and loop
 over it with a single byte key in the range of 0,255, which is xor'd against
 each byte in the list. We sort by fitting quotient which is generated for each
 entry, and take the top 5 candidates."
-  (let* ((bytes (hex-string-to-bytes hex-string))
+  (let* ((bytes (if (stringp input)
+                    (hex-string-to-bytes hex-string)
+                    input))
          (decs (i:iter (i:for i from 0 below 256)
                  (i:collect (decrypt-single-byte-xor bytes i)))))
     (car
@@ -144,6 +145,9 @@ next E, then I again for the 4th byte, and so on."
 ;;; Challenge 6
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defparameter *min-keysize* 2)
+(defparameter *max-keysize* 40)
+
 (defun string->binary (str)
   "Convert string into a list of bits. Since we're using ASCII we pad the bits
 for each character to 7."
@@ -151,8 +155,69 @@ for each character to 7."
     (i:iter (i:for c in-string (format nil "~7,'0B" (char-int s)))
       (i:in outer (i:collect (if (equal c #\1) 1 0))))))
 
+(defun string->bytes (str)
+  "Convert string into a list of bits. Since we're using ASCII we pad the bits
+for each character to 7."
+  (i:iter (i:for s in-string str)
+    (i:collect (char-int s))))
+
+(defun bytes->binary (bs)
+  "Convert bytes into a list of bits. Since we're using ASCII we pad the bits
+for each character to 7."
+  (i:iter outer (i:for b in-vector bs)
+    (i:iter (i:for c in-string (format nil "~7,'0B" b))
+      (i:in outer (i:collect (if (equal c #\1) 1 0))))))
+
 (defun hamming-distance (a b)
   "Compute the difference between the bits of strings a and b."
   (count 1 (mapcar #'logxor
-                   (string->binary a)
-                   (string->binary b))))
+                   (if (stringp a) (string->binary a) (bytes->binary a))
+                   (if (stringp b) (string->binary b) (bytes->binary b)))))
+
+(defun score-keysize (size bs)
+  (let* ((ka (subseq bs 0 size))
+         (kb (subseq bs size (* size 2)))
+         (dist (hamming-distance ka kb))
+         (norm (float (/ dist size))))
+    `(,norm ,dist ,size)))
+
+(defun seq->blocks (seq blocksize)
+  "Convert a list into a list of lists of blocksize length. The final sublist
+may be shorter than blocksize."
+  (let* ((len (length seq))
+         (num-bytes (/ len blocksize)))
+    (i:iter (i:for i from 0 below num-bytes)
+      (i:collect
+          (subseq
+           seq
+           (* i blocksize)
+           (let ((end (+ (* i blocksize) blocksize)))
+             (if (>= end len) len end)))))))
+
+(defun transpose-blocks (blocks blocksize)
+  "Takes a list of blocks (vectors) and blocksize and makes a block that is the
+first byte of every block, and a block that is the second byte of every block,
+and so on."
+  (let ((tbs (make-list blocksize)))
+    (i:iter outer (i:for b in blocks)
+      (i:iter (i:for i from 0 below blocksize)
+        (when (< i (length b))
+          (setf (nth i tbs) (cons (aref b i) (nth i tbs))))))
+    (mapcar #'nreverse tbs)))
+
+
+
+(defun load-encrypted-file (p)
+  (let* ((bs (base64:base64-string-to-usb8-array (uiop:read-file-string p)))
+         (ks (i:iter (i:for n from *min-keysize* to *max-keysize*)
+               (i:collect (score-keysize n bs))))
+         (sizes (mapcar (lambda (k) (nth 2 k))
+                        (sort (copy-seq ks) #'< :key #'car)))
+         (blocks (seq->blocks bs (car sizes)))
+         (transposed (transpose-blocks blocks (nth 0 sizes))))
+    (mapcar
+     (lambda (b)
+       (single-byte-xor-cipher (coerce b '(vector (unsigned-byte 8)))))
+     transposed)
+
+    (sort (copy-seq ks) #'< :key #'car)))

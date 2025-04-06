@@ -25,7 +25,9 @@
            #:fixed-xor
            #:single-byte-xor-cipher
            #:xor-cipher-file
-           #:repeating-key-xor))
+           #:repeating-key-xor
+           #:hamming-distance
+           #:load-encrypted-file))
 
 (in-package :cryptopals/set1)
 
@@ -79,16 +81,17 @@ best solution."
   (let* ((decs (i:iter (i:for b in-vector bs)
                  (i:collect
                      (downcase (format nil "~C" (code-char (logxor b x)))))))
-         (sc (score decs))
-         )
+         (sc (score decs)))
     `(,sc ,x ,(apply #'concat decs))))
 
-(defun single-byte-xor-cipher (hex-string)
+(defun single-byte-xor-cipher (input)
   "Try to find the best decrypted text. Convert the hex-string to bytes and loop
 over it with a single byte key in the range of 0,255, which is xor'd against
 each byte in the list. We sort by fitting quotient which is generated for each
 entry, and take the top 5 candidates."
-  (let* ((bytes (hex-string-to-bytes hex-string))
+  (let* ((bytes (if (stringp input)
+                    (hex-string-to-bytes input)
+                    input))
          (decs (i:iter (i:for i from 0 below 256)
                  (i:collect (decrypt-single-byte-xor bytes i)))))
     (car
@@ -118,7 +121,8 @@ We then sort by score in descending order and return the top candidate."
 (defclass circular ()
   ((items :initarg :items)))
 
-(defmethod initialize-instance :after ((c circular))
+(defmethod initialize-instance :after ((c circular) &rest initargs)
+  (declare (ignorable initargs))
   (setf (slot-value c 'items) (circular (slot-value c 'items))))
 
 (defmethod next-item ((c circular))
@@ -138,3 +142,99 @@ next E, then I again for the 4th byte, and so on."
                (i:collect (char-int s))))
          (rk (make-instance 'circular :items kb)))
     (downcase (apply #'concat (string-to-xord-hex text rk)))))
+
+;;; Challenge 6
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; There's a file. It's been base64'd after being encrypted with repeating-key
+;; XOR. Decrypt it.
+;; https://www.cryptopals.com/sets/1/challenges/6
+
+(defparameter *min-keysize* 2)
+(defparameter *max-keysize* 40)
+(defparameter *input-file-6* #p"../data/6.txt")
+
+(defun string->binary (str)
+  "Convert string into a list of bits. Since we're using ASCII we pad the bits
+for each character to 7."
+  (i:iter outer (i:for s in-string str)
+    (i:iter (i:for c in-string (format nil "~7,'0B" (char-int s)))
+      (i:in outer (i:collect (if (equal c #\1) 1 0))))))
+
+(defun string->bytes (str)
+  "Convert string into a list of bits. Since we're using ASCII we pad the bits
+for each character to 7."
+  (i:iter (i:for s in-string str)
+    (i:collect (char-int s))))
+
+(defun bytes->binary (bs)
+  "Convert bytes into a list of bits. Since we're using ASCII we pad the bits
+for each character to 7."
+  (i:iter outer (i:for b in-vector bs)
+    (i:iter (i:for c in-string (format nil "~7,'0B" b))
+      (i:in outer (i:collect (if (equal c #\1) 1 0))))))
+
+(defun hamming-distance (a b)
+  "Compute the difference between the bits of strings a and b."
+  (count 1 (mapcar #'logxor
+                   (if (stringp a) (string->binary a) (bytes->binary a))
+                   (if (stringp b) (string->binary b) (bytes->binary b)))))
+
+(defun score-keysize (size bs)
+  "To find the correct keysize we average the distance of 40 KEYSIZE blocks."
+  (let* ((ds (i:iter (i:for n from 0 to (* 40 size) by size)
+               (i:collect
+                   (hamming-distance
+                    (subseq bs n (+ n size))
+                    (subseq bs (+ n size) (+ n (* 2 size)))))))
+         (avg (/ (apply #'+ ds) (length ds)))
+         (norm (float (/ avg size))))
+    `(,norm ,(float avg) ,size)))
+
+(defun seq->blocks (seq blocksize)
+  "Convert a list into a list of lists of blocksize length. The final sublist
+may be shorter than blocksize."
+  (let* ((len (length seq))
+         (num-bytes (/ len blocksize)))
+    (i:iter (i:for i from 0 below num-bytes)
+      (i:collect
+          (subseq
+           seq
+           (* i blocksize)
+           (let ((end (+ (* i blocksize) blocksize)))
+             (if (>= end len) len end)))))))
+
+(defun transpose-blocks (blocks blocksize)
+  "Takes a list of blocks (vectors) and blocksize and makes a block that is the
+first byte of every block, and a block that is the second byte of every block,
+and so on."
+  (let ((tbs (make-list blocksize)))
+    (i:iter outer (i:for b in blocks)
+      (i:iter (i:for i from 0 below blocksize)
+        (when (< i (length b))
+          (setf (nth i tbs) (cons (aref b i) (nth i tbs))))))
+    (mapcar #'nreverse tbs)))
+
+(defun load-encrypted-file (p)
+  "Load a file encrypted with a rotating key XOR cipher, find the key, and
+decrypt it. This requires moving through many intermediary steps.
+TODO: There's way too much conversion from strings -> bytes -> vectors, etc."
+  (let* ((bs (base64:base64-string-to-usb8-array (uiop:read-file-string p)))
+         (ks (sort (i:iter (i:for n from *min-keysize* to *max-keysize*)
+                     (i:collect (score-keysize n bs))) #'< :key #'car))
+         (sizes (mapcar (lambda (k) (nth 2 k))
+                        (sort (copy-seq ks) #'< :key #'car)))
+         (blocks (seq->blocks bs (car sizes)))
+         (transposed (transpose-blocks blocks (car sizes)))
+         (xord (mapcar
+                (lambda (b)
+                  (single-byte-xor-cipher (coerce b '(vector (unsigned-byte 8)))))
+                transposed))
+         (key (coerce (mapcar (lambda (x) (code-char (nth 1 x))) xord) 'string))
+         (decoded (hex-string-to-bytes
+                   (repeating-key-xor
+                    (base64:base64-string-to-string (uiop:read-file-string p))
+                    :key key))))
+    (coerce
+     (i:iter (i:for b in-vector decoded)
+       (i:collect (code-char b))) 'string)))

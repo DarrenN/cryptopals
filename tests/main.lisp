@@ -188,7 +188,7 @@ Play that funky music
     (ok (equal (cryptopals/set1:hamming-distance "this is a test" "wokka wokka!!!") 37)))
 
   (testing "breaking-reverse-xor"
-    (ok (equal (str:collapse-whitespaces (cryptopals/set1:load-encrypted-file #p"../data/6.txt"))
+    (ok (equal (str:collapse-whitespaces (cryptopals/set1:challenge-6 #p"../data/6.txt"))
                (str:collapse-whitespaces *output6*)))))
 
 ;; Challenge 7

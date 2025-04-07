@@ -28,10 +28,13 @@
            #:xor-cipher-file
            #:repeating-key-xor
            #:hamming-distance
-           #:load-encrypted-file
-           #:challenge-7))
+           #:challenge-6
+           #:challenge-7
+           #:challenge-8))
 
 (in-package :cryptopals/set1)
+
+;;; Run the tests: (asdf:test-system :cryptopals)
 
 ;;; Cryptopals Challenge Set 1
 ;;; https://www.cryptopals.com/sets/1
@@ -217,7 +220,7 @@ and so on."
           (setf (nth i tbs) (cons (aref b i) (nth i tbs))))))
     (mapcar #'nreverse tbs)))
 
-(defun load-encrypted-file (p)
+(defun challenge-6 (p)
   "Load a file encrypted with a rotating key XOR cipher, find the key, and
 decrypt it. This requires moving through many intermediary steps.
 TODO: There's way too much conversion from strings -> bytes -> vectors, etc."

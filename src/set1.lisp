@@ -1,6 +1,7 @@
 (defpackage cryptopals/set1
   (:use :cl)
   (:import-from :cl-base64)
+  (:import-from :ironclad)
   (:import-from :babel
                 #:octets-to-string)
   (:import-from :alexandria
@@ -27,7 +28,8 @@
            #:xor-cipher-file
            #:repeating-key-xor
            #:hamming-distance
-           #:load-encrypted-file))
+           #:load-encrypted-file
+           #:challenge-7))
 
 (in-package :cryptopals/set1)
 
@@ -181,8 +183,8 @@ for each character to 7."
                    (if (stringp b) (string->binary b) (bytes->binary b)))))
 
 (defun score-keysize (size bs)
-  "To find the correct keysize we average the distance of 40 KEYSIZE blocks."
-  (let* ((ds (i:iter (i:for n from 0 to (* 40 size) by size)
+  "To find the correct keysize we average the distance of MAX KEYSIZE blocks."
+  (let* ((ds (i:iter (i:for n from 0 to (* *max-keysize* size) by size)
                (i:collect
                    (hamming-distance
                     (subseq bs n (+ n size))
@@ -238,3 +240,50 @@ TODO: There's way too much conversion from strings -> bytes -> vectors, etc."
     (coerce
      (i:iter (i:for b in-vector decoded)
        (i:collect (code-char b))) 'string)))
+
+;;; Challenge 7
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The Base64-encoded content in a file has been encrypted via AES-128 in ECB
+;; mode under the key "YELLOW SUBMARINE". Decrypt it. You know the key,
+;; after all
+
+(defparameter *input-file-7* #p"../data/7.txt")
+
+(defun decrypt-aes-128-ecb-base64 (base64-ciphertext key-string)
+  "Decrypts a BASE64-CIPHERTEXT string using AES-128-ECB with KEY-STRING (ASCII)."
+  (let* ((key (ironclad:ascii-string-to-byte-array key-string))
+         (ciphertext (cl-base64:base64-string-to-usb8-array base64-ciphertext))
+         (cipher (ironclad:make-cipher :aes :mode :ecb :key key :padding :pkcs7)))
+    (ironclad:decrypt-message cipher ciphertext)))
+
+
+(defun challenge-7 (filepath key)
+  (coerce
+   (map 'list #'code-char
+        (decrypt-aes-128-ecb-base64 (uiop:read-file-string filepath) key))
+   'string))
+
+;;; Challenge 8
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; In this file are a bunch of hex-encoded ciphertexts.
+;; One of them has been encrypted with ECB.
+;; Detect it.
+
+;; convert each ciphertext into a list of 16 byte blocks and see if they repeat?
+
+(defparameter *input-file-8* #p"../data/8.txt")
+
+(defun challenge-8 (filepath)
+  "Break each line of ciphertext into 16 byte blocks and look for dupes."
+  (let ((ls (uiop:read-file-lines filepath))
+        (seen (make-hash-table :test #'equal)))
+    (i:iter outer (i:for l in ls)
+      (i:for j upfrom 1)
+      (i:iter (i:for block in
+                     (seq->blocks l 16))
+        (if (gethash block seen)
+            (i:in outer (i:adjoining (format nil "line: ~a ciphertext: ~a" j l) test #'equal))
+            (setf (gethash block seen) t))))))
+

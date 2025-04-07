@@ -279,11 +279,12 @@ TODO: There's way too much conversion from strings -> bytes -> vectors, etc."
   "Break each line of ciphertext into 16 byte blocks and look for dupes."
   (let ((ls (uiop:read-file-lines filepath))
         (seen (make-hash-table :test #'equal)))
-    (i:iter outer (i:for l in ls)
-      (i:for j upfrom 1)
-      (i:iter (i:for block in
-                     (seq->blocks l 16))
-        (if (gethash block seen)
-            (i:in outer (i:adjoining (format nil "line: ~a ciphertext: ~a" j l) test #'equal))
-            (setf (gethash block seen) t))))))
+    (car
+     (i:iter outer (i:for l in ls)
+       (i:for j upfrom 1)
+       (i:iter (i:for block in
+                      (seq->blocks l 16))
+         (if (gethash block seen)
+             (i:in outer (i:adjoining (format nil "line: ~a ciphertext: ~a" j l) test #'equal))
+             (setf (gethash block seen) t)))))))
 

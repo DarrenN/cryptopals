@@ -13,7 +13,8 @@
                 :components
                 ((:file "main")
                  (:file "constants")
-                 (:file "set1"))))
+                 (:file "set1")
+                 (:file "set2"))))
   :description "Cryptopals Cryptography Challenge"
   :in-order-to ((test-op (test-op "cryptopals/tests"))))
 

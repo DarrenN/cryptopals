@@ -285,3 +285,14 @@ Play that funky music
            #p"../data/7.txt"
            "YELLOW SUBMARINE"))
          (str:collapse-whitespaces *output7*)))))
+
+;; Set 2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Challenge 9
+
+(deftest set2/challenge9
+  (testing "pkcs7 padding"
+    (ok (string-equal
+         (cryptopals/set2:pkcs7-pad "YELLOW SUBMARINE" 20)
+         "YELLOW SUBMARINE04040404"))))
